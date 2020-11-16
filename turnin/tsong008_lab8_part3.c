@@ -15,11 +15,11 @@
 #endif
 #include "Timer.h"
 
-enum States{Start, Wait, Play} State;
+enum States{Start, Wait, A0_P, A0_R} State;
 
-unsigned char boolTracker = 0x00;
+//unsigned char boolTracker = 0x00;
 unsigned char tempA;
-double octect[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
+double melody[7] = {261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00};
 unsigned char i = 0;
 
 void set_PWM(double frequency){
@@ -52,27 +52,14 @@ void Tick(){
 			State = Wait;
 	      		break;
 		case Wait:
-			if (tempA == 0x01){
-				if (boolTracker == 0x00){
-			  		boolTracker = 0x01;
-				}
-				else if (boolTracker == 0x01){
-			  		boolTracker = 0x00;
-		       		}
-       			}
-			State = (boolTracker)? Play: Wait;
+			State = (tempA == 0x01)? A0_P: Wait;
 		     	break;
-		case Play:
-			if (tempA == 0x01){
-				if (boolTracker == 0x00){
-			  		boolTracker = 0x01;
-				}
-				else if (boolTracker == 0x01){
-			  		boolTracker = 0x00;
-		       		}
-       			}
-			State = (boolTracker)? Play: Wait;
+		case A0_P:
+			State = (tempA == 0x01)? A0_P: A0_R;
 		     	break;
+		case A0_R:
+			State = Wait;
+			break;
 	    	default:
 	      		break;
 	}
@@ -80,30 +67,14 @@ void Tick(){
 		case Start:
 			break;
 	   	case Wait:
-			if (tempA == 0x02){
-				if ( i < 7){
-					i++;
-				}
-			}
-			else if (tempA == 0x04){
-				if ( i > 0 ){
-					i--;
-				}
-			}
 			set_PWM(0);
 			break;
-		case Play:
-			if (tempA == 0x02){
-				if ( i < 7){
-					i++;
-				}
+		case A0_P:
+			for ( i = 0; i < 7; ++i){
+				set_PWM(octect[i]);
 			}
-			else if (tempA == 0x04){
-				if ( i > 0 ){
-					i--;
-				}
-			}
-			set_PWM(octect[i]);
+			break;
+		case A0_R:
 			break;
 	    default:
 	      	break;

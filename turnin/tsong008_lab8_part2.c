@@ -15,10 +15,12 @@
 #endif
 #include "Timer.h"
 
-enum States{Start, Wait, C4, D, E, F, G, A, B, C5} State;
+enum States{Start, Wait, Play} State;
 
 unsigned char boolTracker = 0x00;
 unsigned char tempA;
+double octect[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
+unsigned char i = 0;
 
 void set_PWM(double frequency){
 	static double current_frequency;
@@ -45,120 +47,64 @@ void PWM_off(){
 }
 
 void Tick(){
-	switch(State){ // transitions
+	switch(State){ //Transitions
 		case Start:
-			State = C4;
+			State = Wait;
 	      		break;
-		case C4:
-		      if (tempA == 0x02){
-			State = D;
-		      }
-		      else{
-			State = C4;
-		      }
-		      break;
-	    	case D:
-		      if (tempA == 0x02){
-			State = E;
-		      }
-		      else if (tempA == 0x04){
-			State = C4;
-		      }
-		      else{
-			State = D;
-		      }
-		      break;
-	    	case E:
-		      if (tempA == 0x02){
-			State = F;
-		      }
-		      else if (tempA == 0x04){
-			State = D;
-		      }
-		      else{
-			State = E;
-		      }
-		      break;
-	    	case F:
-		      if (tempA == 0x02){
-			State = G;
-		      }
-		      else if (tempA == 0x04){
-			State = E;
-		      }
-		      else{
-			State = F;
-		      }
-		      break;
-	    	case G:
-		      if (tempA == 0x02){
-			State = A;
-		      }
-		      else if (tempA == 0x04){
-			State = F;
-		      }
-		      else{
-			State = G;
-		      }
-		      break;
-		case A:
-		      if (tempA == 0x02){
-			State = B;
-		      }
-		      else if (tempA == 0x04){
-			State = G;
-		      }
-		      else{
-			State = A;
-		      }
-		      break;
-	    	case B:
-		      if (tempA == 0x02){
-			State = C5;
-		      }
-		      else if (tempA == 0x04){
-			State = A;
-		      }
-		      else{
-			State = B;
-		      }
-		      break;
-	    	case C5:
-		      if (tempA == 0x04){
-			State = B;
-		      }
-		      else{
-			State = C5;
-		      }
-		      break;
+		case Wait:
+			if (tempA == 0x01){
+				if (boolTracker == 0x00){
+			  		boolTracker = 0x01;
+				}
+				else if (boolTracker == 0x01){
+			  		boolTracker = 0x00;
+		       		}
+       			}
+			State = (boolTracker)? Play: Wait;
+		     	break;
+		case Play:
+			if (tempA == 0x01){
+				if (boolTracker == 0x00){
+			  		boolTracker = 0x01;
+				}
+				else if (boolTracker == 0x01){
+			  		boolTracker = 0x00;
+		       		}
+       			}
+			State = (boolTracker)? Play: Wait;
+		     	break;
 	    	default:
 	      		break;
 	}
-	switch(State) {
-	    case C4:
-		      set_PWM(261.63);
-		      break;
-	    case D:
-		      set_PWM(293.66);
-		      break;
-	    case E:
-		      set_PWM(329.63);
-		      break;
-	    case F:
-		      set_PWM(349.23);
-		     break;
-	    case G:
-		      set_PWM(392.00);
-		      break;
-	    case A:
-		      set_PWM(440.00);
-		      break;
-	    case B:
-		      set_PWM(493.88);
-		      break;
-	    case C5:
-		      set_PWM(523.25);
-		      break;
+	switch(State) {//Actions
+		case Start:
+			break;
+	   	case Wait:
+			if (tempA == 0x02){
+				if ( i < 7){
+					i++;
+				}
+			}
+			else if (tempA == 0x04){
+				if ( i > 0 ){
+					i--;
+				}
+			}
+			set_PWM(0);
+			break;
+		case Play:
+			if (tempA == 0x02){
+				if ( i < 7){
+					i++;
+				}
+			}
+			else if (tempA == 0x04){
+				if ( i > 0 ){
+					i--;
+				}
+			}
+			set_PWM(octect[i]);
+			break;
 	    default:
 	      	break;
   	}	
@@ -174,24 +120,12 @@ int main(void) {
  	TimerOn();
 	PWM_on();
 	State = Start;
+	boolTracker = 0x00;
     while (1) {
 	tempA = ~PINA;
 	while(!TimerFlag);
    	TimerFlag = 0;
-       	if (tempA == 0x01){
-        	if (boolTracker == 0x00){
-          		boolTracker = 0x01;
-		}
-        	else if (boolTracker == 0x01){
-          		boolTracker = 0x00;
-       		}
-       }
-	if (boolTracker){
-		Tick();
-        }
-	else{
-        	set_PWM(0);
-      	}
+	Tick();
     }
     return 1;
 }
