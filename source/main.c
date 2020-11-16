@@ -1,7 +1,7 @@
 /*	Author: Tinghui Song
  *  Partner(s) Name: 
  *	Lab Section: 24
- *	Assignment: Lab #8  Exercise #2
+ *	Assignment: Lab #8  Exercise #3
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -15,11 +15,11 @@
 #endif
 #include "Timer.h"
 
-enum States{Start, Wait, Play} State;
+enum States{Start, Wait, A0_P,Play, Hold} State;
 
-unsigned char boolTracker = 0x00;
+//unsigned char boolTracker = 0x00;
 unsigned char tempA;
-double octect[8] = {261.63, 293.66, 329.63, 349.23, 392.00, 440.00, 493.88, 523.25};
+double melody[13] = {261.63, 0, 261.63, 0, 392.00, 0, 392.00, 0, 440.00, 0, 440.00, 0, 392.00};
 unsigned char i = 0;
 
 void set_PWM(double frequency){
@@ -52,27 +52,14 @@ void Tick(){
 			State = Wait;
 	      		break;
 		case Wait:
-			if (tempA == 0x01){
-				if (boolTracker == 0x00){
-			  		boolTracker = 0x01;
-				}
-				else if (boolTracker == 0x01){
-			  		boolTracker = 0x00;
-		       		}
-       			}
-			State = (boolTracker)? Play: Wait;
+			State = (tempA == 0x01)? Play: Wait;
 		     	break;
 		case Play:
-			if (tempA == 0x01){
-				if (boolTracker == 0x00){
-			  		boolTracker = 0x01;
-				}
-				else if (boolTracker == 0x01){
-			  		boolTracker = 0x00;
-		       		}
-       			}
-			State = (boolTracker)? Play: Wait;
-		     	break;
+			State = (tempA == 0x01)? Hold: Wait;
+			break;
+		case Hold:
+			State = (tempA == 0x01)? Hold: Wait;
+			break;
 	    	default:
 	      		break;
 	}
@@ -80,33 +67,22 @@ void Tick(){
 		case Start:
 			break;
 	   	case Wait:
-			if (tempA == 0x02){
-				if ( i < 7){
-					i++;
-				}
-			}
-			else if (tempA == 0x04){
-				if ( i > 0 ){
-					i--;
-				}
+			set_PWM(0);
+			break;
+		case A0_P:
+			break;
+		case Play:
+			for ( i = 0; i < 13; ++i){
+				set_PWM(melody[i]);
+				while(!TimerFlag);
+   				TimerFlag = 0;
 			}
 			set_PWM(0);
 			break;
-		case Play:
-			if (tempA == 0x02){
-				if ( i < 7){
-					i++;
-				}
-			}
-			else if (tempA == 0x04){
-				if ( i > 0 ){
-					i--;
-				}
-			}
-			set_PWM(octect[i]);
+		case Hold:
 			break;
-	    default:
-	      	break;
+	   	default:
+	      		break;
   	}	
 }
 
@@ -120,7 +96,7 @@ int main(void) {
  	TimerOn();
 	PWM_on();
 	State = Start;
-	boolTracker = 0x00;
+	//boolTracker = 0x00;
     while (1) {
 	tempA = ~PINA;
 	while(!TimerFlag);

@@ -1,7 +1,7 @@
 /*	Author: Tinghui Song
  *  Partner(s) Name: 
  *	Lab Section: 24
- *	Assignment: Lab #8  Exercise #2
+ *	Assignment: Lab #8  Exercise #3
  *	Exercise Description: [optional - include for your own benefit]
  *
  *	I acknowledge all content contained herein, excluding template or example
@@ -15,11 +15,11 @@
 #endif
 #include "Timer.h"
 
-enum States{Start, Wait, A0_P, A0_R} State;
+enum States{Start, Wait, A0_P,Play, Hold} State;
 
 //unsigned char boolTracker = 0x00;
 unsigned char tempA;
-double melody[7] = {261.63, 261.63, 392.00, 392.00, 440.00, 440.00, 392.00};
+double melody[13] = {261.63, 0, 261.63, 0, 392.00, 0, 392.00, 0, 440.00, 0, 440.00, 0, 392.00};
 unsigned char i = 0;
 
 void set_PWM(double frequency){
@@ -52,13 +52,13 @@ void Tick(){
 			State = Wait;
 	      		break;
 		case Wait:
-			State = (tempA == 0x01)? A0_P: Wait;
+			State = (tempA == 0x01)? Play: Wait;
 		     	break;
-		case A0_P:
-			State = (tempA == 0x01)? A0_P: A0_R;
-		     	break;
-		case A0_R:
-			State = Wait;
+		case Play:
+			State = (tempA == 0x01)? Hold: Wait;
+			break;
+		case Hold:
+			State = (tempA == 0x01)? Hold: Wait;
 			break;
 	    	default:
 	      		break;
@@ -70,14 +70,19 @@ void Tick(){
 			set_PWM(0);
 			break;
 		case A0_P:
-			for ( i = 0; i < 7; ++i){
-				set_PWM(octect[i]);
+			break;
+		case Play:
+			for ( i = 0; i < 13; ++i){
+				set_PWM(melody[i]);
+				while(!TimerFlag);
+   				TimerFlag = 0;
 			}
+			set_PWM(0);
 			break;
-		case A0_R:
+		case Hold:
 			break;
-	    default:
-	      	break;
+	   	default:
+	      		break;
   	}	
 }
 
@@ -91,7 +96,7 @@ int main(void) {
  	TimerOn();
 	PWM_on();
 	State = Start;
-	boolTracker = 0x00;
+	//boolTracker = 0x00;
     while (1) {
 	tempA = ~PINA;
 	while(!TimerFlag);
